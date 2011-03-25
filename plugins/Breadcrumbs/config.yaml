@@ -1,0 +1,17 @@
+name: Breadcrumbs
+id:   Breadcrumbs
+key:  breadcrumbs
+version: 0.1
+author_link: http://alfasado.net/
+author_name: Alfasado Inc.
+l10n_class: Breadcrumbs::L10N
+description: <__trans phrase="It allows users to keep track of their locations within documents.">
+tags:
+    block:
+        Breadcrumbs: $breadcrumbs::Breadcrumbs::Plugin::_hdlr_breadcrumbs
+    function:
+        BreadcrumbsURL: $breadcrumbs::Breadcrumbs::Plugin::_hdlr_breadcrumbs_link
+        BreadcrumbsLink: $breadcrumbs::Breadcrumbs::Plugin::_hdlr_breadcrumbs_link
+        BreadcrumbsLabel: $breadcrumbs::Breadcrumbs::Plugin::_hdlr_breadcrumbs_label
+        BreadcrumbsTitle: $breadcrumbs::Breadcrumbs::Plugin::_hdlr_breadcrumbs_label
+
