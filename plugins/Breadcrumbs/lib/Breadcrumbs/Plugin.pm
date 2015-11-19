@@ -17,7 +17,9 @@ sub _hdlr_breadcrumbs {
         unshift( @breadcrumbs, { breadcrumbstype  => $entry->class,
                                  breadcrumbslabel => $entry->title,
                                  breadcrumbslink  => $entry->permalink } );
-        $category = $entry->category;
+        if ( ( $entry->class eq 'entry' ) || $args->{ display_folder } ) {
+            $category = $entry->category;
+        }
     } elsif ( $archive_type =~ /Category/ ) {
         $category = $ctx->stash( 'archive_category' );
     } elsif ( $archive_type =~ /Folder/ ) {

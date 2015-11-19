@@ -15,7 +15,10 @@ function smarty_block_mtbreadcrumbs( $args, $content, &$ctx, &$repeat ) {
                                   'breadcrumbslabel' => $entry->title,
                                   'breadcrumbslink'  => $ctx->mt->db()->entry_link( $entry->id, $archive_type, $args ),
                            ) );
-            $category = $entry->category();
+            if ( isset( $args[ 'display_folder' ] ) ) $display_folder = $args[ 'display_folder' ];
+            if ( ( $entry->class === 'entry' ) || $display_folder ) {
+                $category = $entry->category();
+            }
         } elseif ( strpos( $archive_type, 'Category' ) !== false ) {
             $category = $ctx->stash( 'category' );
         } elseif ( strpos($archive_type, 'Folder') !== false ) {
