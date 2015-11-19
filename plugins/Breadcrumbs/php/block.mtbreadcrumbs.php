@@ -16,9 +16,9 @@ function smarty_block_mtbreadcrumbs( $args, $content, &$ctx, &$repeat ) {
                                   'breadcrumbslink'  => $ctx->mt->db()->entry_link( $entry->id, $archive_type, $args ),
                            ) );
             $category = $entry->category();
-        } elseif ( strpos( $archive_type, 'Category' ) !== false) {
+        } elseif ( strpos( $archive_type, 'Category' ) !== false ) {
             $category = $ctx->stash( 'category' );
-        } elseif ( strpos($archive_type, 'Folder') !== false) {
+        } elseif ( strpos($archive_type, 'Folder') !== false ) {
             $category = $ctx->stash( 'category' );
         } elseif ( preg_match( '/(?:Yearly|Monthly|Weekly|Daily|Author)/', $archive_type ) ) {
             require_once 'function.mtarchivelink.php';
