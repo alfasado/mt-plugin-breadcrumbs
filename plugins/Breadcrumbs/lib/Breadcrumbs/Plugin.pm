@@ -9,25 +9,27 @@ sub _hdlr_breadcrumbs {
     my $blog = $ctx->stash( 'blog' );
     my $category;
     my $folder;
-    my $archive_type = $ctx->{ archive_type };
+    my $archive_type = $ctx->{ archive_type } || $ctx->{ current_archive_type } || '';
     require MT::Template::Tags::Category;
     require MT::Template::Tags::Archive;
-    if ( $archive_type =~ /Individual|Page/ ) {
+    if ( $archive_type =~ /^(?:Individual|Page)$/ ) {
         my $entry = $ctx->stash( 'entry' );
-        unshift ( @breadcrumbs, { breadcrumbstype => $entry->class,
-                                  breadcrumbslabel => $entry->title,
-                                  breadcrumbslink => $entry->permalink } );
-        $category = $entry->category if $entry->class eq 'entry';
-        # TODO:Page
+        unshift( @breadcrumbs, { breadcrumbstype  => $entry->class,
+                                 breadcrumbslabel => $entry->title,
+                                 breadcrumbslink  => $entry->permalink } );
+        $category = $entry->category;
     } elsif ( $archive_type =~ /Category/ ) {
         $category = $ctx->stash( 'archive_category' );
     } elsif ( $archive_type =~ /Folder/ ) {
-        # TODO:Folder(or Tag) # $folder = $ctx->stash( 'category' );
-    } elsif ( $archive_type =~ /Yearly|Monthly|Weekly|Daily|Author/ ) {
-            unshift ( @breadcrumbs,
-                    { breadcrumbstype => lc ( $archive_type ),
-                      breadcrumbslabel => MT::Template::Tags::Archive::_hdlr_archive_title( $ctx, $args ),
-                      breadcrumbslink => MT::Template::Tags::Archive::_hdlr_archive_link( $ctx, $args ) } );
+        $category = $ctx->stash( 'archive_category' );
+    } elsif ( $archive_type =~ /(?:Yearly|Monthly|Weekly|Daily|Author)/ ) {
+        my $breadcrumbslabel = MT::Template::Tags::Archive::_hdlr_archive_title( $ctx, $args );
+        if ( lc( MT->current_language || 'en_us') =~ /^j[ap]$/ ) {
+            $breadcrumbslabel =~ s/&#24180;/\x{5E74}/
+        }
+        unshift( @breadcrumbs, { breadcrumbstype  => lc ( $archive_type ),
+                                 breadcrumbslabel => $breadcrumbslabel,
+                                 breadcrumbslink  => MT::Template::Tags::Archive::_hdlr_archive_link( $ctx, $args ) } );
     } else {
         return '';
     }
@@ -67,15 +69,16 @@ sub _hdlr_breadcrumbs {
     my $vars = $ctx->{ __stash }{ vars } ||= {};
     my $res = '';
     foreach my $breadcrumb ( @breadcrumbs ) {
-        local $vars->{ __first__ } = !$i;
-        local $vars->{ __last__ }  = ! defined $breadcrumbs[ $i + 1 ];
-        local $vars->{ __odd__ }   = ( $i % 2 ) == 0;
-        local $vars->{ __even__ }  = ( $i % 2 ) == 1;
+        local $vars->{ __first__ }   = !$i;
+        local $vars->{ __last__ }    = ! defined $breadcrumbs[ $i + 1 ];
+        local $vars->{ __odd__ }     = ( $i % 2 ) == 0;
+        local $vars->{ __even__ }    = ( $i % 2 ) == 1;
         local $vars->{ __counter__ } = $i + 1;
-        local $vars->{ __type__ } = $breadcrumb->{ breadcrumbstype };
+        local $vars->{ __type__ }    = $breadcrumb->{ breadcrumbstype };
         local $ctx->{ __stash }{ breadcrumbslabel } = $breadcrumb->{ breadcrumbslabel };
-        local $ctx->{ __stash }{ breadcrumbslink } = $breadcrumb->{ breadcrumbslink };
+        local $ctx->{ __stash }{ breadcrumbslink }  = $breadcrumb->{ breadcrumbslink };
         my $out = $builder->build( $ctx, $tokens, $cond );
+        return $ctx->error( $builder->errstr ) unless defined $out;
         $res .= $out;
         $res .= $glue if $glue && defined $breadcrumbs[ $i + 1 ];
         $i++;

@@ -1,5 +1,5 @@
 <?php
-function smarty_block_mtbreadcrumbs ( $args, $content, &$ctx, &$repeat ) {
+function smarty_block_mtbreadcrumbs( $args, $content, &$ctx, &$repeat ) {
     $localvars = array( 'breadcrumbs', 'breadcrumb', '__breadcrumbs_counter', '__breadcrumbs_count' );
     if (! isset( $content ) ) {
         $ctx->localize( $localvars );
@@ -7,27 +7,32 @@ function smarty_block_mtbreadcrumbs ( $args, $content, &$ctx, &$repeat ) {
         $category = NULL;
         $archive_type = $ctx->stash( 'current_archive_type' );
         $blog = $ctx->stash( 'blog' );
-        if ( preg_match( '/Individual|Page/', $archive_type ) ) {
+        if ( $archive_type === 'Individual' || $archive_type === 'Page' ) {
             $entry = $ctx->stash( 'entry' );
             $app = $ctx->stash( 'bootstrapper' );
             array_unshift( $breadcrumbs,
-                           array( 'breadcrumbstype' => $entry->class,
+                           array( 'breadcrumbstype'  => $entry->class,
                                   'breadcrumbslabel' => $entry->title,
-                                  'breadcrumbslink' => $ctx->mt->db()->entry_link( $entry->id, $archive_type, $args ),
+                                  'breadcrumbslink'  => $ctx->mt->db()->entry_link( $entry->id, $archive_type, $args ),
                            ) );
-            if ( $entry->class == 'entry' ) $category = $entry->category();
-            // TODO:Page
-        } elseif ( preg_match( '/Category/', $archive_type ) ) {
+            $category = $entry->category();
+        } elseif ( strpos( $archive_type, 'Category' ) !== false) {
             $category = $ctx->stash( 'category' );
-        } elseif ( preg_match( '/Folder/', $archive_type ) ) {
-            // TODO:Folder(or Tag)
-        } elseif ( preg_match( '/Yearly|Monthly|Weekly|Daily|Author/', $archive_type ) ) {
-            require_once( 'function.mtarchivelink.php' );
-            require_once( 'function.mtarchivetitle.php' );
+        } elseif ( strpos($archive_type, 'Folder') !== false) {
+            $category = $ctx->stash( 'category' );
+        } elseif ( preg_match( '/(?:Yearly|Monthly|Weekly|Daily|Author)/', $archive_type ) ) {
+            require_once 'function.mtarchivelink.php';
+            require_once 'function.mtarchivetitle.php';
+            $breadcrumbslabel = smarty_function_mtarchivetitle( $args, $ctx );
+            $lang = strtolower($blog && $blog->blog_language ? $blog->blog_language
+                                                             : $ctx->mt->config('DefaultLanguage'));
+            if ( $lang === 'ja' || $lang === 'jp' ) {
+                $breadcrumbslabel = str_replace('&#24180;', "\xE5\xB9\xB4", $breadcrumbslabel);
+            }
             array_unshift( $breadcrumbs,
-                           array( 'breadcrumbstype' => strtolower( $archive_type ),
-                                  'breadcrumbslabel' => smarty_function_mtarchivetitle( $args, $ctx ),
-                                  'breadcrumbslink' => smarty_function_mtarchivelink( $args, $ctx ),
+                           array( 'breadcrumbstype'  => strtolower( $archive_type ),
+                                  'breadcrumbslabel' => $breadcrumbslabel,
+                                  'breadcrumbslink'  => smarty_function_mtarchivelink( $args, $ctx ),
                            ) );
         } else {
             $ctx->restore( $localvars );
@@ -40,29 +45,29 @@ function smarty_block_mtbreadcrumbs ( $args, $content, &$ctx, &$repeat ) {
                 if ( $args[ 'with_index' ] && $category_link && preg_match( '/\/(#.*)*$/', $category_link ) ) {
                     $index = $ctx->mt->config( 'IndexBasename' );
                     $ext = $blog->blog_file_extension;
-                    if ( $ext ) $ext = '.' . $ext; 
+                    if ( $ext ) $ext = '.' . $ext;
                     $index .= $ext;
                     $category_link = preg_replace( '/\/(#.*)?$/', "/$index\$1", $category_link );
                 }
                 array_unshift( $breadcrumbs,
-                               array( 'breadcrumbstype' => $category->class,
+                               array( 'breadcrumbstype'  => $category->class,
                                       'breadcrumbslabel' => $category->label,
-                                      'breadcrumbslink' => $category_link,
+                                      'breadcrumbslink'  => $category_link,
                                ) );
                 $category = __breadcrumbs_catgory_parent( $ctx, $category );
             }
         }
         array_unshift( $breadcrumbs,
-                       array( 'breadcrumbstype' => $blog->class,
+                       array( 'breadcrumbstype'  => $blog->class,
                               'breadcrumbslabel' => $blog->name,
-                              'breadcrumbslink' => $blog->site_url(),
+                              'breadcrumbslink'  => $blog->site_url(),
                        ) );
-        if ( $blog->class == 'blog' ) {
+        if ( $blog->class === 'blog' ) {
             if ( $website = $blog->website() ) {
                 array_unshift( $breadcrumbs,
-                               array( 'breadcrumbstype' => $website->class,
+                               array( 'breadcrumbstype'  => $website->class,
                                       'breadcrumbslabel' => $website->name,
-                                      'breadcrumbslink' => $website->site_url(),
+                                      'breadcrumbslink'  => $website->site_url(),
                                ) );
             }
         }
@@ -105,7 +110,11 @@ function smarty_block_mtbreadcrumbs ( $args, $content, &$ctx, &$repeat ) {
 }
 function __breadcrumbs_catgory_parent ( $ctx, $category ) {
     if ( $category_id = $category->parent ) {
-        return $ctx->mt->db()->fetch_category( $category_id );
+        if ( $category->class == 'category' ) {
+            return $ctx->mt->db()->fetch_category( $category_id );
+        } else {
+            return $ctx->mt->db()->fetch_folder( $category_id );
+        }
     } else {
         return NULL;
     }
